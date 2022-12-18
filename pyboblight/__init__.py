@@ -59,7 +59,6 @@ class BobCLient(object):
         
     def reconnect(self):
         self.sock = self._create_socket()
-        print(self.sock)
         self.socketerror=False
         
     
