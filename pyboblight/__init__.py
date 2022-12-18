@@ -5,6 +5,7 @@ import random
 
 class BobCLient(object):
     def __init__(self,host='127.0.0.1',port=19333):
+        print("Connecting to boblight server at %s:%s"%(host,port))
         self.host=host
         self.port=port
     
@@ -13,17 +14,17 @@ class BobCLient(object):
         self.priority=128
         """priority over other boblight clients"""
         
-        self.file=None
+        #self.file=None
         self.sock=None
         
         self.socketerror=False
-        self.do_debug=False
+        self.do_debug=True
         self.handshake()
         
     def debug(self,msg):
         if not self.do_debug:
             return
-        print msg
+        print(msg)
         
     def send_command(self,command):
         if not self.is_connected():
@@ -31,14 +32,14 @@ class BobCLient(object):
         
         self.debug("SND: %s"%command)
         try:
-            self.sock.send(command)
-            self.sock.sendall('\r\n')
-        except:
+            self.sock.sendall(str.encode(command))
+            self.sock.sendall(b'\r\n')
+        except Exception as e:
             self.socketerror=True
     
     def readline(self):
         try:
-            msg=self.file.readline().strip()
+            msg=self.sock.recv(1024).decode().strip()
             self.debug("RCV: %s"%msg)
             return msg
         except:
@@ -59,7 +60,7 @@ class BobCLient(object):
         
     def reconnect(self):
         self.sock = self._create_socket()
-        self.file = self.sock.makefile('rw')
+        print(self.sock)
         self.socketerror=False
         
     
@@ -70,7 +71,6 @@ class BobCLient(object):
         except:
             pass
         self.sock=None
-        self.file=None
         
     
     def is_connected(self):
@@ -80,14 +80,16 @@ class BobCLient(object):
     
     def refresh_lights_info(self):
         self.send_command("get lights")
-        ans=self.readline().split()
-        assert len(ans)==2
+        recv=self.readline()
+        ans=recv.split()
+        lights=recv.split('\n')
+        #assert len(ans)==2
         assert ans[0]=='lights',"Expected 'lights <num>' but got '%s'"%ans
         nlights=int(ans[1])
-        
+    
         tempdic={}
         for i in range(nlights):
-            linfo=self.readline().split()
+            linfo=lights[i+1].split()
             assert len(linfo)==7
             assert linfo[0]=='light'
             assert linfo[2]=='scan'
@@ -121,7 +123,7 @@ class BobCLient(object):
 
     def update(self):
         """sent current light state to server"""
-        for k,light in self.lights.iteritems():
+        for k,light in self.lights.items():
             self._prepare_rgb_color(light.name, light.r, light.g, light.b)
         self._sync()
     
@@ -158,7 +160,7 @@ if __name__=='__main__':
     client=BobCLient('192.168.23.56')
     
     #print light information
-    print client.lights
+    print(client.lights)
     
     #send random colors for 20 seconds
     now=time.time()
@@ -166,7 +168,7 @@ if __name__=='__main__':
     while time.time()<stop:
         time.sleep(0.1)
         #prepare the light color changes
-        for name,light in client.lights.iteritems():
+        for name,light in client.lights.items():
             light.set_color(random.randint(0,255),random.randint(0,255),random.randint(0,255))
         #tell the client to update the current light color state on the server
         client.update()
