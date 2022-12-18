@@ -5,7 +5,6 @@ import random
 
 class BobCLient(object):
     def __init__(self,host='127.0.0.1',port=19333):
-        print("Connecting to boblight server at %s:%s"%(host,port))
         self.host=host
         self.port=port
     
@@ -18,7 +17,7 @@ class BobCLient(object):
         self.sock=None
         
         self.socketerror=False
-        self.do_debug=True
+        self.do_debug=False
         self.handshake()
         
     def debug(self,msg):
